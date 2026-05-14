@@ -1,4 +1,13 @@
 import { useState } from 'react';
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  Paper,
+  Container,
+} from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 
 type Props = {
@@ -23,40 +32,59 @@ export default function LoginPage({ onSwitchToRegister }: Props) {
   };
 
   return (
-    <div style={{ padding: 24, maxWidth: 420, margin: '0 auto' }}>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          Email
-          <input
+    <Container maxWidth="sm" sx={{ mt: 8 }}>
+      <Paper elevation={3} sx={{ p: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom align="center">
+          Login
+        </Typography>
+
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <TextField
+            label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: 8 }}
+            fullWidth
+            variant="outlined"
           />
-        </label>
-        <label>
-          Password
-          <input
+
+          <TextField
+            label="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: 8 }}
+            fullWidth
+            variant="outlined"
           />
-        </label>
 
-        {error ? <div style={{ color: 'red' }}>{error}</div> : null}
+          {error && (
+            <Alert severity="error">
+              {error}
+            </Alert>
+          )}
 
-        <button type="submit" style={{ padding: '10px 16px' }} disabled={loading}>
-          {loading ? 'Logging in…' : 'Login'}
-        </button>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={loading}
+            sx={{ mt: 2 }}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </Button>
 
-        <button type="button" onClick={onSwitchToRegister} style={{ padding: '10px 16px' }}>
-          Register
-        </button>
-      </form>
-    </div>
+          <Button
+            type="button"
+            variant="outlined"
+            size="large"
+            onClick={onSwitchToRegister}
+          >
+            Register
+          </Button>
+        </Box>
+      </Paper>
+    </Container>
   );
 }

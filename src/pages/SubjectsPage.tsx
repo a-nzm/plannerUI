@@ -27,7 +27,12 @@ import {
 } from '../services/subjectApi';
 import SubjectForm, { type SubjectFormValues } from '../components/SubjectForm';
 
-function SubjectsPage() {
+type SubjectsPageProps = {
+  isAdmin?: boolean;
+};
+
+// Subjects page component - accepts isAdmin prop
+function SubjectsPage({ isAdmin = false }: SubjectsPageProps) {
   const [data, setData] = useState<{ content: SubjectDto[]; totalPages: number; totalElements: number; number: number } | null>(
     null
   );
@@ -114,9 +119,11 @@ function SubjectsPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Subjects</Typography>
-        <Button variant="contained" onClick={openNewForm}>
-          + New Subject
-        </Button>
+        {isAdmin && (
+          <Button variant="contained" onClick={openNewForm}>
+            + New Subject
+          </Button>
+        )}
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
@@ -150,24 +157,26 @@ function SubjectsPage() {
                     <TableCell>ID</TableCell>
                     <TableCell>Code</TableCell>
                     <TableCell>Name</TableCell>
-                    <TableCell>Actions</TableCell>
+                    {isAdmin && <TableCell>Actions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {data?.content.map((item) => (
                     <TableRow
                       key={item.id}
-                      onDoubleClick={() => openEditForm(item)}
-                      sx={{ cursor: 'pointer' }}
+                      onDoubleClick={() => isAdmin && openEditForm(item)}
+                      sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
                     >
                       <TableCell>{item.id}</TableCell>
                       <TableCell>{item.code}</TableCell>
                       <TableCell>{item.name}</TableCell>
-                      <TableCell>
-                        <Button size="small" onClick={() => openEditForm(item)}>
-                          Edit
-                        </Button>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <Button size="small" onClick={() => openEditForm(item)}>
+                            Edit
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -194,4 +203,4 @@ function SubjectsPage() {
   );
 }
 
-export default SubjectsPage;
+export default SubjectsPage as React.FC<SubjectsPageProps>;

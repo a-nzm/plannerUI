@@ -38,7 +38,7 @@ type EventFilters = {
   name?: string;
 };
 
-function EventsPage() {
+function EventsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const [data, setData] = useState<{ content: EventDto[]; totalPages: number; totalElements: number; number: number } | null>(
     null
   );
@@ -141,9 +141,11 @@ function EventsPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Events</Typography>
-        <Button variant="contained" onClick={openNewForm}>
-          + New Event
-        </Button>
+        {isAdmin && (
+          <Button variant="contained" onClick={openNewForm}>
+            + New Event
+          </Button>
+        )}
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
@@ -196,15 +198,15 @@ function EventsPage() {
                     <TableCell>Capacity</TableCell>
                     <TableCell>Subject ID</TableCell>
                     <TableCell>Description</TableCell>
-                    <TableCell>Actions</TableCell>
+                    {isAdmin && <TableCell>Actions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {data?.content.map((item) => (
                     <TableRow
                       key={item.id}
-                      onDoubleClick={() => openEditForm(item)}
-                      sx={{ cursor: 'pointer' }}
+                      onDoubleClick={() => isAdmin && openEditForm(item)}
+                      sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
                     >
                       <TableCell>{item.id}</TableCell>
                       <TableCell>{item.name}</TableCell>
@@ -212,11 +214,13 @@ function EventsPage() {
                       <TableCell>{item.capacity}</TableCell>
                       <TableCell>{item.subjectId}</TableCell>
                       <TableCell>{item.description ?? ''}</TableCell>
-                      <TableCell>
-                        <Button size="small" onClick={() => openEditForm(item)}>
-                          Edit
-                        </Button>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <Button size="small" onClick={() => openEditForm(item)}>
+                            Edit
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

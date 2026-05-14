@@ -10,7 +10,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  TextField,
   Select,
   MenuItem,
   FormControl,
@@ -22,12 +21,10 @@ import {
   DialogContent,
 } from '@mui/material';
 import {
-  createMyReservation,
   createReservation,
   deleteReservation,
   getReservations,
   ReservationStatus,
-  updateMyReservation,
   updateReservation,
   updateReservationStatus,
   cancelReservation,
@@ -80,22 +77,27 @@ function ReservationsPage() {
 
     const loadMetadata = async () => {
       try {
-        const hallsPromise = getHalls();
-        const eventsPromise = getEvents();
-        const usersPromise = getUsers(0, 100);
-
-        const [usersResponse, hallsResponse, eventsResponse] = await Promise.all([
-          usersPromise,
-          hallsPromise,
-          eventsPromise,
-        ]);
-
-        setUsers(unwrap(usersResponse));
-
-        setHalls(unwrap(hallsResponse));
-        setEvents(unwrap(eventsResponse));
+        const usersResponse = await getUsers(0, 100);
+        setUsers(unwrap(usersResponse) ?? []);
       } catch (err: unknown) {
-        console.error('Failed to load metadata', err);
+        console.error('Failed to load users', err);
+        setUsers([]);
+      }
+
+      try {
+        const hallsResponse = await getHalls();
+        setHalls(unwrap(hallsResponse) ?? []);
+      } catch (err: unknown) {
+        console.error('Failed to load halls', err);
+        setHalls([]);
+      }
+
+      try {
+        const eventsResponse = await getEvents();
+        setEvents(unwrap(eventsResponse) ?? []);
+      } catch (err: unknown) {
+        console.error('Failed to load events', err);
+        setEvents([]);
       }
     };
 
@@ -153,8 +155,7 @@ function ReservationsPage() {
   const handleSave = async (values: ReservationFormValues) => {
     try {
       if (values.id) {
-        // user-specific update endpoint (me) vs admin update
-        if (isAdmin) {
+        // update reservation
           await updateReservation(values.id, {
             start: values.start,
             end: values.end,
@@ -162,18 +163,8 @@ function ReservationsPage() {
             hallId: values.hallId,
             eventId: values.eventId,
           });
-        } else {
-          await updateMyReservation(values.id, {
-            start: values.start,
-            end: values.end,
-            description: values.description,
-            hallId: values.hallId,
-            eventId: values.eventId,
-          });
-        }
       } else {
-        // create reservation (user vs admin)
-        if (isAdmin) {
+        // create reservation
           await createReservation({
             start: values.start,
             end: values.end,
@@ -181,15 +172,6 @@ function ReservationsPage() {
             hallId: values.hallId,
             eventId: values.eventId,
           });
-        } else {
-          await createMyReservation({
-            start: values.start,
-            end: values.end,
-            description: values.description,
-            hallId: values.hallId,
-            eventId: values.eventId,
-          });
-        }
       }
 
       closeForm();
@@ -244,13 +226,20 @@ function ReservationsPage() {
     }
   };
 
-  const handleFilterChange = (key: keyof ReservationFilters, value: string) => {
-    if (key === 'userId' && !isAdmin) return;
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value === '' ? undefined : isNaN(Number(value)) ? value : Number(value),
-    }));
-  };
+const handleFilterChange = (
+  key: keyof ReservationFilters,
+  value: string
+) => {
+  setFilters(prev => ({
+    ...prev,
+    [key]:
+      value === ''
+        ? undefined
+        : ['status'].includes(key)
+          ? value
+          : Number(value),
+  }));
+};
 
   return (
     <Box sx={{ p: 3 }}>
@@ -278,7 +267,6 @@ function ReservationsPage() {
           </Select>
         </FormControl>
 
-        {isAdmin ? (
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>User</InputLabel>
             <Select
@@ -294,14 +282,6 @@ function ReservationsPage() {
               ))}
             </Select>
           </FormControl>
-        ) : (
-          <TextField
-            size="small"
-            label="User"
-            value={user ? `${user.name ?? ''} ${user.surname ?? ''}` : 'Loading...'}
-            InputProps={{ readOnly: true }}
-          />
-        )}
 
         <FormControl size="small" sx={{ minWidth: 120 }}>
           <InputLabel>Hall</InputLabel>
@@ -368,7 +348,7 @@ function ReservationsPage() {
                     <TableCell>Hall</TableCell>
                     <TableCell>Event</TableCell>
                     <TableCell>Created</TableCell>
-                    <TableCell>Actions</TableCell>
+                    {isAdmin && <TableCell>Actions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -397,9 +377,9 @@ function ReservationsPage() {
                       <TableCell>{hallById.get(reservation.hallId ?? 0)?.name ?? ''}</TableCell>
                       <TableCell>{eventById.get(reservation.eventId ?? 0)?.name ?? ''}</TableCell>
                       <TableCell>{reservation.timestamp ? new Date(reservation.timestamp).toLocaleString() : ''}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                          {(isAdmin || reservation.userId === user?.id) && (
+                      {isAdmin && (
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                             <Button
                               size="small"
                               onClick={(e) => {
@@ -409,35 +389,29 @@ function ReservationsPage() {
                             >
                               Edit
                             </Button>
-                          )}
 
-                          {isAdmin && (
-                            <>
-                              <Button
-                                size="small"
-                                color="success"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleApprove(reservation.id);
-                                }}
-                              >
-                                Approve
-                              </Button>
+                            <Button
+                              size="small"
+                              color="success"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(reservation.id);
+                              }}
+                            >
+                              Approve
+                            </Button>
 
-                              <Button
-                                size="small"
-                                color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReject(reservation.id);
-                                }}
-                              >
-                                Reject
-                              </Button>
-                            </>
-                          )}
+                            <Button
+                              size="small"
+                              color="error"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(reservation.id);
+                              }}
+                            >
+                              Reject
+                            </Button>
 
-                          {(isAdmin || reservation.userId === user?.id) && (
                             <Button
                               size="small"
                               onClick={(e) => {
@@ -447,11 +421,11 @@ function ReservationsPage() {
                             >
                               Cancel
                             </Button>
-                          )}
-                        </Box>
-                      </TableCell>
+                          </Box>
+                        </TableCell>
+                      )}
                     </TableRow>
-                ))}
+                  ))}
                 </TableBody>
               </Table>
             </TableContainer>

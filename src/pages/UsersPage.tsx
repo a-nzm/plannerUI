@@ -26,7 +26,11 @@ import {
 } from '../services/userApi';
 import UserForm, { type UserFormValues } from '../components/UserForm';
 
-function UsersPage() {
+type UsersPageProps = {
+  isAdmin?: boolean;
+};
+
+function UsersPage({ isAdmin = false }: UsersPageProps) {
   const [data, setData] = useState<{ content: UserDto[]; totalPages: number; totalElements: number; number: number } | null>(
     null
   );
@@ -119,9 +123,11 @@ function UsersPage() {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Users</Typography>
-        <Button variant="contained" onClick={openNewForm}>
-          + New User
-        </Button>
+        {isAdmin && (
+          <Button variant="contained" onClick={openNewForm}>
+            + New User
+          </Button>
+        )}
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
@@ -157,26 +163,28 @@ function UsersPage() {
                     <TableCell>Name</TableCell>
                     <TableCell>Surname</TableCell>
                     <TableCell>Admin</TableCell>
-                    <TableCell>Actions</TableCell>
+                    {isAdmin && <TableCell>Actions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredContent?.map((item) => (
                     <TableRow
                       key={item.id}
-                      onDoubleClick={() => openEditForm(item)}
-                      sx={{ cursor: 'pointer' }}
+                      onDoubleClick={() => isAdmin && openEditForm(item)}
+                      sx={{ cursor: isAdmin ? 'pointer' : 'default' }}
                     >
                       <TableCell>{item.id}</TableCell>
                       <TableCell>{item.email}</TableCell>
                       <TableCell>{item.name ?? ''}</TableCell>
                       <TableCell>{item.surname ?? ''}</TableCell>
                       <TableCell>{item.admin ? 'Yes' : 'No'}</TableCell>
-                      <TableCell>
-                        <Button size="small" onClick={() => openEditForm(item)}>
-                          Edit
-                        </Button>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <Button size="small" onClick={() => openEditForm(item)}>
+                            Edit
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -203,4 +211,4 @@ function UsersPage() {
   );
 }
 
-export default UsersPage;
+export default UsersPage as React.FC<UsersPageProps>;

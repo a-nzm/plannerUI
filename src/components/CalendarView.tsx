@@ -177,7 +177,7 @@ function CalendarView() {
   }
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <IconButton onClick={() => navigateWeek(-1)}>
@@ -198,12 +198,21 @@ function CalendarView() {
         </Button>
       </Box>
 
-      <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: `150px repeat(7, 1fr)`, gap: 1, minWidth: 'fit-content' }}>
+      <Box sx={{ flex: 1, overflowX: 'auto' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: `150px repeat(7, 1fr)`, minWidth: 'fit-content', height: '100%' }}>
           {/* Header */}
-          <Box />
-          {weekDates.map((date) => (
-            <Box key={date.toISOString()}>
+          <Box sx={{ borderBottom: '1px solid #ddd', p: 1 }} />
+          {weekDates.map((date, index) => (
+            <Box
+              key={date.toISOString()}
+              sx={{
+                borderLeft: index === 0 ? 'none' : '1px solid #ddd',
+                borderBottom: '1px solid #ddd',
+                p: 1,
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
               <Typography variant="subtitle2" align="center">
                 {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </Typography>
@@ -213,16 +222,27 @@ function CalendarView() {
           {/* Halls */}
           {halls.map((hall) => (
             <React.Fragment key={`hall-group-${hall.id}`}>
-              <Typography variant="body2" sx={{ py: 1 }}>
-                {hall.name}
-              </Typography>
-              {weekDates.map((date) => {
+              <Box
+                sx={{
+                  borderTop: '1px solid #ddd',
+                  borderRight: '1px solid #ddd',
+                  p: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography variant="body2">
+                  {hall.name}
+                </Typography>
+              </Box>
+              {weekDates.map((date, index) => {
                 const dayReservations = getReservationsForDate(date).filter((r) => r.hallId === hall.id);
                 return (
                   <Box
                     key={`${hall.id}-${date.toISOString()}`}
                     sx={{
-                      border: '1px solid #ddd',
+                      borderLeft: index === 0 ? 'none' : '1px solid #ddd',
+                      borderTop: '1px solid #ddd',
                       p: 1,
                       minHeight: 100,
                       display: 'flex',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ComponentType } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import AppBar from '@mui/material/AppBar';
@@ -12,14 +12,18 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ReservationsPage from './pages/ReservationsPage';
 import EventsPage from './pages/EventsPage';
 import HallsPage from './pages/HallsPage';
-import SubjectsPage from './pages/SubjectsPage';
-import UsersPage from './pages/UsersPage';
+import SubjectsPageComponent from './pages/SubjectsPage';
+import UsersPageComponent from './pages/UsersPage';
 import MePage from './pages/MePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CalendarView from './components/CalendarView';
 
+type PageProps = { isAdmin?: boolean };
 type View = 'home' | 'reservations' | 'events' | 'halls' | 'subjects' | 'users' | 'me';
+
+const SubjectsPage = SubjectsPageComponent as ComponentType<PageProps>;
+const UsersPage = UsersPageComponent as ComponentType<PageProps>;
 
 const theme = createTheme({
   palette: {
@@ -69,10 +73,10 @@ function AppContent() {
         <Tab label="Home" value="home" />
         <Tab label="Reservations" value="reservations" />
         <Tab label="Events" value="events" />
+        <Tab label="Halls" value="halls" />
         <Tab label="Me" value="me" />
-        <Tab label="Halls" value="halls" disabled={!isAdmin} />
-        <Tab label="Subjects" value="subjects" disabled={!isAdmin} />
-        <Tab label="Users" value="users" disabled={!isAdmin} />
+        <Tab label="Subjects" value="subjects" />
+        <Tab label="Users" value="users" />
       </Tabs>
 
       <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -81,15 +85,15 @@ function AppContent() {
         ) : view === 'reservations' ? (
           <ReservationsPage />
         ) : view === 'events' ? (
-          <EventsPage />
+          <EventsPage isAdmin={isAdmin} />
         ) : view === 'me' ? (
           <MePage />
         ) : view === 'halls' ? (
-          <HallsPage />
+          <HallsPage isAdmin={isAdmin} />
         ) : view === 'subjects' ? (
-          <SubjectsPage />
+          <SubjectsPage isAdmin={isAdmin} />
         ) : (
-          <UsersPage />
+          <UsersPage isAdmin={isAdmin} />
         )}
       </Box>
     </Box>

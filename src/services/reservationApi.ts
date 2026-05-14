@@ -50,24 +50,21 @@ export const getReservations = async (
   size: number = 10,
   filters: ReservationFilters = {}
 ): Promise<Page<ReservationDto>> => {
-  let url = '';
-  const baseQuery = buildQuery({ page, size });
 
-  if (filters.userId !== undefined) {
-    url = `/reservations/user/${filters.userId}?${baseQuery}`;
-  } else if (filters.hallId !== undefined) {
-    url = `/reservations/hall/${filters.hallId}?${baseQuery}`;
-  } else if (filters.eventId !== undefined) {
-    url = `/reservations/event/${filters.eventId}?${baseQuery}`;
-  } else if (filters.status !== undefined && filters.status !== null) {
-    url = `/reservations/status?${buildQuery({ status: filters.status, page, size })}`;
-  } else {
-    url = `/reservations?${baseQuery}`;
-  }
+  const query = buildQuery({
+    page,
+    size,
+    status: filters.status,
+    userId: filters.userId,
+    hallId: filters.hallId,
+    eventId: filters.eventId,
+  });
 
-  const response = await apiClient.get(url);
+  const response = await apiClient.get(`/reservations?${query}`);
+
   return response.data;
 };
+
 export interface CreateReservationRequest {
   start: string;
   end: string;
@@ -94,18 +91,8 @@ export const createReservation = async (data: CreateReservationRequest) => {
   return response.data as ReservationDto;
 };
 
-export const createMyReservation = async (data: CreateReservationRequest) => {
-  const response = await apiClient.post('/reservations/me', data);
-  return response.data as ReservationDto;
-};
-
 export const updateReservation = async (id: number, data: UpdateReservationRequest) => {
   const response = await apiClient.put(`/reservations/${id}`, data);
-  return response.data as ReservationDto;
-};
-
-export const updateMyReservation = async (id: number, data: UpdateReservationRequest) => {
-  const response = await apiClient.put(`/reservations/${id}/me`, data);
   return response.data as ReservationDto;
 };
 
