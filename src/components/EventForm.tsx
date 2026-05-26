@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   TextField,
@@ -12,6 +12,7 @@ import {
 import { Delete as DeleteIcon, Save as SaveIcon, Close as CloseIcon } from '@mui/icons-material';
 import type { EventDto } from '../services/eventApi';
 import { EventType } from '../services/eventApi';
+import type { SubjectDto } from '../services/subjectApi';
 
 export type EventFormValues = Omit<EventDto, 'id'> & { id?: number };
 
@@ -20,6 +21,7 @@ type Props = {
   onCancel: () => void;
   onSave: (values: EventFormValues) => void;
   onDelete?: () => void;
+  subjects?: SubjectDto[];
 };
 
 const emptyValues: EventFormValues = {
@@ -30,9 +32,20 @@ const emptyValues: EventFormValues = {
   subjectId: 0,
 };
 
-export default function EventForm({ initial, onCancel, onSave, onDelete }: Props) {
-  const [values, setValues] = useState<EventFormValues>(initial ?? emptyValues);
+export default function EventForm({ initial, onCancel, onSave, onDelete, subjects = [] }: Props) {
+  const [subjectInitialized, setSubjectInitialized] = useState<boolean>(typeof initial?.subjectId === 'number');
+  const [values, setValues] = useState<EventFormValues>(
+    initial ?? { ...emptyValues, subjectId: subjects[0]?.id ?? 0 }
+  );
   const isEdit = useMemo(() => typeof values.id === 'number', [values.id]);
+
+  useEffect(() => {
+    if (initial) return;
+    if (!subjectInitialized && subjects.length > 0) {
+      setValues((prev) => ({ ...prev, subjectId: subjects[0].id }));
+      setSubjectInitialized(true);
+    }
+  }, [initial, subjects, subjectInitialized]);
 
   const updateField = (key: keyof EventFormValues, value: string) => {
     setValues((prev) => ({
@@ -82,14 +95,32 @@ export default function EventForm({ initial, onCancel, onSave, onDelete }: Props
           variant="outlined"
         />
 
-        <TextField
-          label="Subject ID"
-          type="number"
-          value={values.subjectId ?? 0}
-          onChange={(e) => updateField('subjectId', e.target.value)}
-          fullWidth
-          variant="outlined"
-        />
+        {subjects.length > 0 ? (
+          <FormControl fullWidth>
+            <InputLabel>Subject</InputLabel>
+            <Select
+              value={values.subjectId ?? 0}
+              label="Subject"
+              onChange={(e) => updateField('subjectId', e.target.value)}
+            >
+              <MenuItem value={0}>(none)</MenuItem>
+              {subjects.map((subject) => (
+                <MenuItem key={subject.id} value={subject.id}>
+                  {subject.code} - {subject.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <TextField
+            label="Subject ID"
+            type="number"
+            value={values.subjectId ?? 0}
+            onChange={(e) => updateField('subjectId', e.target.value)}
+            fullWidth
+            variant="outlined"
+          />
+        )}
 
         <TextField
           label="Description"

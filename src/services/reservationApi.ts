@@ -71,6 +71,7 @@ export interface CreateReservationRequest {
   description?: string;
   hallId?: number;
   eventId?: number;
+  userId?: number;
 }
 
 export interface UpdateReservationRequest {

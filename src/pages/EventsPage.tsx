@@ -31,6 +31,7 @@ import {
   searchEvents,
   updateEvent,
 } from '../services/eventApi';
+import { getSubjects, type SubjectDto } from '../services/subjectApi';
 import EventForm, { type EventFormValues } from '../components/EventForm';
 
 type EventFilters = {
@@ -46,6 +47,7 @@ function EventsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<EventDto | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [subjects, setSubjects] = useState<SubjectDto[]>([]);
   const [filters, setFilters] = useState<EventFilters>({});
 
   const load = async () => {
@@ -73,6 +75,19 @@ function EventsPage({ isAdmin = false }: { isAdmin?: boolean }) {
   useEffect(() => {
     load();
   }, [filters]);
+
+  useEffect(() => {
+    const loadSubjects = async () => {
+      try {
+        const result = await getSubjects(0, 100);
+        setSubjects(result.content);
+      } catch (err: unknown) {
+        console.error('Failed to load subjects', err);
+      }
+    };
+
+    loadSubjects();
+  }, []);
 
   const selectedFormValues = useMemo<EventFormValues | undefined>(() => {
     if (!selected) return undefined;
@@ -239,6 +254,7 @@ function EventsPage({ isAdmin = false }: { isAdmin?: boolean }) {
               onCancel={closeForm}
               onSave={handleSave}
               onDelete={selected ? handleDelete : undefined}
+              subjects={subjects}
             />
           </DialogContent>
         </Dialog>

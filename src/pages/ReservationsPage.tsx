@@ -32,10 +32,12 @@ import {
   type ReservationDto,
   type ReservationFilters,
 } from '../services/reservationApi';
-import { getEvents, type EventDto } from '../services/eventApi';
+import { createEvent, getEvents, type EventDto } from '../services/eventApi';
+import { getSubjects, type SubjectDto } from '../services/subjectApi';
 import { getHalls, type HallDto } from '../services/hallApi';
 import { getUsers, type UserDto } from '../services/userApi';
 import ReservationForm, { type ReservationFormValues } from '../components/ReservationForm';
+import EventForm, { type EventFormValues } from '../components/EventForm';
 import { useAuth } from '../context/AuthContext';
 
 function ReservationsPage() {
@@ -47,16 +49,20 @@ function ReservationsPage() {
   const { user, isAdmin } = useAuth();
 
   const [filters, setFilters] = useState<ReservationFilters>({});
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(10);
   const [users, setUsers] = useState<UserDto[]>([]);
   const [halls, setHalls] = useState<HallDto[]>([]);
   const [events, setEvents] = useState<EventDto[]>([]);
+  const [subjects, setSubjects] = useState<SubjectDto[]>([]);
+  const [showEventForm, setShowEventForm] = useState(false);
 
   const load = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await getReservations(0, 10, filters);
+      const result = await getReservations(page, pageSize, filters);
       setData(result);
     } catch (err: unknown) {
       setError('Failed to load reservations');
@@ -66,10 +72,19 @@ function ReservationsPage() {
     }
   };
 
+  const refreshEvents = async () => {
+    try {
+      const eventsResponse = await getEvents(0, 100);
+      setEvents(Array.isArray(eventsResponse) ? eventsResponse : eventsResponse.content);
+    } catch (err: unknown) {
+      console.error('Failed to refresh events', err);
+    }
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  }, [filters, page]);
 
   useEffect(() => {
     const unwrap = <T,>(response: Page<T> | T[]) =>
@@ -99,10 +114,43 @@ function ReservationsPage() {
         console.error('Failed to load events', err);
         setEvents([]);
       }
+
+      try {
+        const subjectsResponse = await getSubjects(0, 100);
+        setSubjects(unwrap(subjectsResponse) ?? []);
+      } catch (err: unknown) {
+        console.error('Failed to load subjects', err);
+        setSubjects([]);
+      }
     };
 
     loadMetadata();
   }, [isAdmin, user]);
+
+  const openAddEventForm = () => {
+    setShowEventForm(true);
+  };
+
+  const closeEventForm = () => {
+    setShowEventForm(false);
+  };
+
+  const handleSaveEvent = async (values: EventFormValues) => {
+    try {
+      await createEvent({
+        name: values.name,
+        type: values.type,
+        description: values.description,
+        capacity: values.capacity,
+        subjectId: values.subjectId,
+      });
+      await refreshEvents();
+      closeEventForm();
+    } catch (err: unknown) {
+      console.error(err);
+      setError('Failed to save event');
+    }
+  };
 
   const selectedReservationFormValues = useMemo<ReservationFormValues | undefined>(() => {
     if (!selectedReservation) return undefined;
@@ -154,24 +202,21 @@ function ReservationsPage() {
 
   const handleSave = async (values: ReservationFormValues) => {
     try {
+      const payload = {
+        start: values.start,
+        end: values.end,
+        description: values.description,
+        hallId: values.hallId,
+        eventId: values.eventId,
+        userId: values.userId ?? user?.id,
+      };
+
       if (values.id) {
         // update reservation
-          await updateReservation(values.id, {
-            start: values.start,
-            end: values.end,
-            description: values.description,
-            hallId: values.hallId,
-            eventId: values.eventId,
-          });
+        await updateReservation(values.id, payload);
       } else {
         // create reservation
-          await createReservation({
-            start: values.start,
-            end: values.end,
-            description: values.description,
-            hallId: values.hallId,
-            eventId: values.eventId,
-          });
+        await createReservation(payload);
       }
 
       closeForm();
@@ -230,6 +275,7 @@ const handleFilterChange = (
   key: keyof ReservationFilters,
   value: string
 ) => {
+  setPage(0);
   setFilters(prev => ({
     ...prev,
     [key]:
@@ -315,11 +361,17 @@ const handleFilterChange = (
           </Select>
         </FormControl>
 
-        <Button variant="outlined" onClick={() => setFilters({})}>
+        <Button variant="outlined" onClick={() => {
+          setPage(0);
+          setFilters({});
+        }}>
           Clear Filters
         </Button>
 
-        <Button variant="outlined" onClick={() => setFilters({ userId: user?.id })}>
+        <Button variant="outlined" onClick={() => {
+          setPage(0);
+          setFilters({ userId: user?.id });
+        }}>
           My Reservations
         </Button>
       </Box>
@@ -431,9 +483,30 @@ const handleFilterChange = (
             </TableContainer>
           )}
 
-          <Typography sx={{ mt: 2 }}>
-            Page {data?.number != null ? data.number + 1 : '-'} of {data?.totalPages ?? '-'} | Total: {data?.totalElements ?? '-'}
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+            <Box>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+                disabled={!data || data.number <= 0}
+                sx={{ mr: 1 }}
+              >
+                Prev
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setPage((prev) => prev + 1)}
+                disabled={!data || data.number >= (data.totalPages - 1)}
+              >
+                Next
+              </Button>
+            </Box>
+            <Typography>
+              Page {data?.number != null ? data.number + 1 : '-'} of {data?.totalPages ?? '-'} | Total: {data?.totalElements ?? '-'}
+            </Typography>
+          </Box>
         </>
       )}
 
@@ -448,10 +521,26 @@ const handleFilterChange = (
               onCancel={closeForm}
               onSave={handleSave}
               onDelete={selectedReservation ? handleDelete : undefined}
+              onAddEvent={openAddEventForm}
               users={isAdmin ? users : user ? [user] : []}
               halls={halls}
               events={events}
               currentUserId={user?.id}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showEventForm && (
+        <Dialog open={showEventForm} onClose={closeEventForm} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>
+            New Event
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            <EventForm
+              onCancel={closeEventForm}
+              onSave={handleSaveEvent}
+              subjects={subjects}
             />
           </DialogContent>
         </Dialog>

@@ -25,6 +25,7 @@ type Props = {
   onCancel: () => void;
   onSave: (values: ReservationFormValues) => void;
   onDelete?: () => void;
+  onAddEvent?: () => void;
   users?: UserDto[];
   halls?: HallDto[];
   events?: EventDto[];
@@ -47,6 +48,7 @@ export default function ReservationForm({
   onCancel,
   onSave,
   onDelete,
+  onAddEvent,
   users = [],
   halls = [],
   events = [],
@@ -164,20 +166,32 @@ export default function ReservationForm({
           </Select>
         </FormControl>
 
-        <FormControl fullWidth>
-          <InputLabel>Event</InputLabel>
-          <Select
-            value={values.eventId ?? ''}
-            label="Event"
-            onChange={(e) => updateField('eventId', String(e.target.value))}
-          >
-            {events.map((event) => (
-              <MenuItem key={event.id} value={event.id}>
-                {event.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+          <FormControl fullWidth>
+            <InputLabel>Event</InputLabel>
+            <Select
+              value={values.eventId ?? ''}
+              label="Event"
+              onChange={(e) => updateField('eventId', String(e.target.value))}
+            >
+              {events.map((event) => (
+                <MenuItem key={event.id} value={event.id}>
+                  {event.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {onAddEvent ? (
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={onAddEvent}
+              sx={{ whiteSpace: 'nowrap', height: 'fit-content' }}
+            >
+              + Event
+            </Button>
+          ) : null}
+        </Box>
 
         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
           <Button
