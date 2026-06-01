@@ -29,29 +29,37 @@ const emptyValues: EventFormValues = {
   type: EventType.OTHER,
   description: '',
   capacity: 0,
-  subjectId: 0,
+  subjectId: null,
 };
 
 export default function EventForm({ initial, onCancel, onSave, onDelete, subjects = [] }: Props) {
-  const [subjectInitialized, setSubjectInitialized] = useState<boolean>(typeof initial?.subjectId === 'number');
-  const [values, setValues] = useState<EventFormValues>(
-    initial ?? { ...emptyValues, subjectId: subjects[0]?.id ?? 0 }
-  );
-  const isEdit = useMemo(() => typeof values.id === 'number', [values.id]);
+  const [values, setValues] = useState<EventFormValues>(initial ?? emptyValues);
 
   useEffect(() => {
-    if (initial) return;
-    if (!subjectInitialized && subjects.length > 0) {
-      setValues((prev) => ({ ...prev, subjectId: subjects[0].id }));
-      setSubjectInitialized(true);
+    if (initial) {
+      setValues(initial);
     }
-  }, [initial, subjects, subjectInitialized]);
+  }, [initial]);
 
-  const updateField = (key: keyof EventFormValues, value: string) => {
-    setValues((prev) => ({
-      ...prev,
-      [key]: key === 'capacity' || key === 'subjectId' ? Number(value) : value,
-    }));
+  const isEdit = useMemo(() => typeof values.id === 'number', [values.id]);
+
+  const updateField = (key: keyof EventFormValues, value: string | number | null) => {
+    setValues((prev) => {
+      let newValue: string | number | null = value;
+
+      if (key === 'capacity') {
+        newValue = Number(value);
+      }
+
+      if (key === 'subjectId') {
+        newValue = value === '' || value == null ? null : Number(value);
+      }
+
+      return {
+        ...prev,
+        [key]: newValue,
+      };
+    });
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -95,32 +103,21 @@ export default function EventForm({ initial, onCancel, onSave, onDelete, subject
           variant="outlined"
         />
 
-        {subjects.length > 0 ? (
-          <FormControl fullWidth>
-            <InputLabel>Subject</InputLabel>
-            <Select
-              value={values.subjectId ?? 0}
-              label="Subject"
-              onChange={(e) => updateField('subjectId', e.target.value)}
-            >
-              <MenuItem value={0}>(none)</MenuItem>
-              {subjects.map((subject) => (
-                <MenuItem key={subject.id} value={subject.id}>
-                  {subject.code} - {subject.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        ) : (
-          <TextField
-            label="Subject ID"
-            type="number"
-            value={values.subjectId ?? 0}
+        <FormControl fullWidth>
+          <InputLabel>Subject</InputLabel>
+          <Select
+            value={values.subjectId ?? ''}
+            label="Subject"
             onChange={(e) => updateField('subjectId', e.target.value)}
-            fullWidth
-            variant="outlined"
-          />
-        )}
+          >
+            <MenuItem value="">(none)</MenuItem>
+            {subjects.map((subject) => (
+              <MenuItem key={subject.id} value={subject.id}>
+                {subject.code} - {subject.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <TextField
           label="Description"

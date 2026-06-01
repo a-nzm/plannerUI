@@ -63,7 +63,7 @@ function CalendarView() {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
       dates.push(d);
-    }
+    } 
     return dates;
   };
 

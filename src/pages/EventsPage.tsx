@@ -118,11 +118,17 @@ function EventsPage({ isAdmin = false }: { isAdmin?: boolean }) {
 
   const handleSave = async (values: EventFormValues) => {
     try {
+      const payload = {
+        ...values,
+        subjectId: values.subjectId ?? null,
+      };
+
       if (values.id) {
-        await updateEvent(values.id, values);
+        await updateEvent(values.id, payload);
       } else {
-        await createEvent(values);
+        await createEvent(payload);
       }
+
       closeForm();
       await load();
     } catch (err: unknown) {
@@ -227,7 +233,7 @@ function EventsPage({ isAdmin = false }: { isAdmin?: boolean }) {
                       <TableCell>{item.name}</TableCell>
                       <TableCell>{item.type}</TableCell>
                       <TableCell>{item.capacity}</TableCell>
-                      <TableCell>{item.subjectId}</TableCell>
+                      <TableCell>{item.subjectId ?? '(none)'}</TableCell>
                       <TableCell>{item.description ?? ''}</TableCell>
                       {isAdmin && (
                         <TableCell>

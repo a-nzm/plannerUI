@@ -8,15 +8,19 @@ export enum EventType {
   WORKSHOP = 'WORKSHOP',
   OTHER = 'OTHER',
 }
-
+ 
 export interface EventDto {
   id: number;
   name: string;
   type: EventType;
   description?: string;
   capacity: number;
-  subjectId: number;
+  subjectId: number | null;
 }
+
+export type EventPayload = Omit<EventDto, 'id'> & {
+  subjectId?: number | null;
+};
 
 export interface Page<T> {
   content: T[];
@@ -46,12 +50,12 @@ export const getEventById = async (id: number): Promise<EventDto> => {
   return response.data;
 };
 
-export const createEvent = async (data: Omit<EventDto, 'id'>) => {
+export const createEvent = async (data: EventPayload) => {
   const response = await apiClient.post('/events', data);
   return response.data as EventDto;
 };
 
-export const updateEvent = async (id: number, data: Partial<EventDto>) => {
+export const updateEvent = async (id: number, data: Partial<EventPayload>) => {
   const response = await apiClient.put(`/events/${id}`, data);
   return response.data as EventDto;
 };
