@@ -32,6 +32,7 @@ type Props = {
   currentUserId?: number;
   currentUser?: UserDto | null;
   isAdmin?: boolean;
+  readOnly?: boolean;
 };
 
 const emptyValues: ReservationFormValues = {
@@ -53,6 +54,7 @@ export default function ReservationForm({
   halls = [],
   events = [],
   currentUserId,
+  readOnly = false,
 }: Props) {
     
   const defaultValues: ReservationFormValues = {
@@ -91,6 +93,7 @@ export default function ReservationForm({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (readOnly) return;
     onSave(values);
   };
 
@@ -106,6 +109,7 @@ export default function ReservationForm({
           fullWidth
           InputLabelProps={{ shrink: true }}
           variant="outlined"
+          disabled={readOnly}
         />
 
         <TextField
@@ -117,6 +121,7 @@ export default function ReservationForm({
           fullWidth
           InputLabelProps={{ shrink: true }}
           variant="outlined"
+          disabled={readOnly}
         />
 
         <TextField
@@ -135,6 +140,7 @@ export default function ReservationForm({
           multiline
           rows={3}
           variant="outlined"
+          disabled={readOnly}
         />
 
         <TextField
@@ -157,6 +163,7 @@ export default function ReservationForm({
             value={values.hallId ?? ''}
             label="Hall"
             onChange={(e) => updateField('hallId', String(e.target.value))}
+            disabled={readOnly}
           >
             {halls.map((hall) => (
               <MenuItem key={hall.id} value={hall.id}>
@@ -173,6 +180,7 @@ export default function ReservationForm({
               value={values.eventId ?? ''}
               label="Event"
               onChange={(e) => updateField('eventId', String(e.target.value))}
+              disabled={readOnly}
             >
               {events.map((event) => (
                 <MenuItem key={event.id} value={event.id}>
@@ -181,7 +189,7 @@ export default function ReservationForm({
               ))}
             </Select>
           </FormControl>
-          {onAddEvent ? (
+          {!readOnly && onAddEvent ? (
             <Button
               type="button"
               variant="outlined"
@@ -194,23 +202,25 @@ export default function ReservationForm({
         </Box>
 
         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            startIcon={<SaveIcon />}
-          >
-            {isEdit ? 'Save' : 'Create'}
-          </Button>
+          {!readOnly ? (
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+            >
+              {isEdit ? 'Save' : 'Create'}
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outlined"
             onClick={onCancel}
             startIcon={<CloseIcon />}
           >
-            Cancel
+            {readOnly ? 'Close' : 'Cancel'}
           </Button>
-          {isEdit && onDelete ? (
+          {!readOnly && isEdit && onDelete ? (
             <Button
               type="button"
               variant="outlined"

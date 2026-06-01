@@ -7,9 +7,14 @@ import {
   Chip,
   IconButton,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
-import { getReservations, type ReservationDto } from '../services/reservationApi';
+import { useAuth } from '../context/AuthContext';
+import ReservationForm, { type ReservationFormValues } from './ReservationForm';
+import { getReservations, type ReservationDto, updateReservation, deleteReservation } from '../services/reservationApi';
 import { getHalls, type HallDto } from '../services/hallApi';
 import { getEvents, type EventDto } from '../services/eventApi';
 import { getUsers, type UserDto } from '../services/userApi';
@@ -23,27 +28,30 @@ function CalendarView() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<ReservationDto | null>(null);
+  const { user, isAdmin } = useAuth();
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [resRes, hallsRes, eventsRes, usersRes] = await Promise.all([
+        getReservations(0, 1000),
+        getHalls(),
+        getEvents(),
+        getUsers(0, 1000),
+      ]);
+      setReservations(resRes.content);
+      setHalls(hallsRes.content || hallsRes);
+      setEvents(eventsRes.content || eventsRes);
+      setUsers(usersRes.content || usersRes);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [resRes, hallsRes, eventsRes, usersRes] = await Promise.all([
-          getReservations(0, 1000),
-          getHalls(),
-          getEvents(),
-          getUsers(0, 1000),
-        ]);
-        setReservations(resRes.content);
-        setHalls(hallsRes.content || hallsRes);
-        setEvents(eventsRes.content || eventsRes);
-        setUsers(usersRes.content || usersRes);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, []);
 
@@ -140,6 +148,111 @@ function CalendarView() {
     setSelectedDay(newDate);
   };
 
+  const canEditSelectedReservation = Boolean(
+    selectedReservation &&
+      (isAdmin || selectedReservation.userId === user?.id)
+  );
+
+  const handleSaveReservation = async (values: ReservationFormValues) => {
+    if (!values.id) return;
+
+    try {
+      setLoading(true);
+      await updateReservation(values.id, {
+        start: values.start,
+        end: values.end,
+        description: values.description,
+        hallId: values.hallId,
+        eventId: values.eventId,
+        userId: values.userId,
+      });
+      await loadData();
+      closeReservationInfo();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteReservation = async () => {
+    if (!selectedReservation) return;
+    if (!window.confirm('Delete this reservation?')) return;
+
+    try {
+      setLoading(true);
+      await deleteReservation(selectedReservation.id);
+      await loadData();
+      closeReservationInfo();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (date: Date | string) => {
+  const d = new Date(date);
+
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+
+  return `${day}.${month}.${year}`;
+};
+
+const formatTime = (date: Date | string) => {
+  const d = new Date(date);
+
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+
+  return `${hours}:${minutes}`;
+};
+
+const formatDayMonth = (date: Date | string) => {
+  const d = new Date(date);
+
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+
+  return `${day}.${month}.`;
+};
+
+const getSelectedReservationValues = (reservation: ReservationDto): ReservationFormValues => ({
+  id: reservation.id,
+  start: reservation.start,
+  end: reservation.end,
+  status: reservation.status,
+  description: reservation.description,
+  userId: reservation.userId,
+  hallId: reservation.hallId,
+  eventId: reservation.eventId,
+});
+
+const closeReservationInfo = () => setSelectedReservation(null);
+
+const reservationInfoDialog = selectedReservation ? (
+  <Dialog open onClose={closeReservationInfo} maxWidth="sm" fullWidth>
+    <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>
+      Reservation Details
+    </DialogTitle>
+    <DialogContent sx={{ pt: 2 }}>
+      <ReservationForm
+        initial={getSelectedReservationValues(selectedReservation)}
+        onCancel={closeReservationInfo}
+        onSave={handleSaveReservation}
+        onDelete={canEditSelectedReservation ? handleDeleteReservation : undefined}
+        users={users}
+        halls={halls}
+        events={events}
+        currentUserId={user?.id}
+        readOnly={!canEditSelectedReservation}
+      />
+    </DialogContent>
+  </Dialog>
+) : null;
+
   if (loading) {
     return <Typography>Loading calendar...</Typography>;
   }
@@ -148,10 +261,12 @@ function CalendarView() {
     const dayReservations = getReservationsForDate(selectedDay);
 
     return (
-      <Box sx={{ p: 2 }}>
+      <>
+        {reservationInfoDialog}
+        <Box sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5">
-            {selectedDay.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {selectedDay.toLocaleDateString('en-US', { weekday: 'long' })} - {formatDate(selectedDay)}
           </Typography>
           <Box>
             <Button variant="outlined" onClick={() => navigateDay(-1)} sx={{ mr: 1 }}>
@@ -182,7 +297,7 @@ function CalendarView() {
                     borderLeft: '1px solid #eee',
                   }}
                 >
-                  {hour}:00
+                  {String(hour).padStart(2, '0')}:00
                 </Box>
               ))}
             </Box>
@@ -227,6 +342,7 @@ function CalendarView() {
                     return (
                       <Card
                         key={r.id}
+                        onClick={() => setSelectedReservation(r)}
                         sx={{
                           position: 'absolute',
                           top: 10,
@@ -253,15 +369,7 @@ function CalendarView() {
                           </Box>
                           <Box>
                             <Typography variant="caption" display="block" sx={{ mb: 0.25, fontSize: '0.65rem' }}>
-                              {new Date(r.start).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}{' '}
-                              -{' '}
-                              {new Date(r.end).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {formatTime(r.start)} - {formatTime(r.end)}
                             </Typography>
                             <Chip
                               label={r.status}
@@ -284,18 +392,21 @@ function CalendarView() {
           })}
         </Box>
       </Box>
+    </>
     );
   }
 
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <>
+      {reservationInfoDialog}
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <IconButton onClick={() => navigateWeek(-1)}>
             <ChevronLeft />
           </IconButton>
           <Typography variant="h5">
-            Week of {weekDates[0].toLocaleDateString()} - {weekDates[6].toLocaleDateString()}
+            Week of {formatDate(weekDates[0])} - {formatDate(weekDates[6])}
           </Typography>
           <IconButton onClick={() => navigateWeek(1)}>
             <ChevronRight />
@@ -325,7 +436,11 @@ function CalendarView() {
               }}
             >
               <Typography variant="subtitle2" align="center">
-                {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+<>
+  {date.toLocaleDateString('en-US', { weekday: 'long' })}
+  <br />
+  {formatDayMonth(date)}
+</>
               </Typography>
             </Box>
           ))}
@@ -383,6 +498,7 @@ function CalendarView() {
                       return (
                         <Card
                           key={r.id}
+                          onClick={() => setSelectedReservation(r)}
                           sx={{
                             cursor: 'pointer',
                             '&:hover': { boxShadow: 3 },
@@ -402,15 +518,7 @@ function CalendarView() {
                               {event?.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" display="block">
-                              {new Date(r.start).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                              {' - '}
-                              {new Date(r.end).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {formatTime(r.start)} - {formatTime(r.end)}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" display="block">
                               {user?.name}
@@ -437,6 +545,7 @@ function CalendarView() {
         </Box>
       </Box>
     </Box>
+  </>
   );
 }
 

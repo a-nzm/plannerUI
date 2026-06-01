@@ -46,6 +46,7 @@ function ReservationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<ReservationDto | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [readOnlyMode, setReadOnlyMode] = useState(false);
   const { user, isAdmin } = useAuth();
 
   const [filters, setFilters] = useState<ReservationFilters>({});
@@ -84,7 +85,7 @@ function ReservationsPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, page]);
+  }, [filters, page, pageSize]);
 
   useEffect(() => {
     const unwrap = <T,>(response: Page<T> | T[]) =>
@@ -187,17 +188,26 @@ function ReservationsPage() {
 
   const openNewForm = () => {
     setSelectedReservation(null);
+    setReadOnlyMode(false);
     setShowForm(true);
   };
 
   const openEditForm = (reservation: ReservationDto) => {
     setSelectedReservation(reservation);
+    setReadOnlyMode(false);
+    setShowForm(true);
+  };
+
+  const openViewForm = (reservation: ReservationDto) => {
+    setSelectedReservation(reservation);
+    setReadOnlyMode(true);
     setShowForm(true);
   };
 
   const closeForm = () => {
     setShowForm(false);
     setSelectedReservation(null);
+    setReadOnlyMode(false);
   };
 
   const handleSave = async (values: ReservationFormValues) => {
@@ -285,6 +295,24 @@ const handleFilterChange = (
           ? value
           : Number(value),
   }));
+};
+
+  const getSortIndicator = (column: string) => {
+    if (filters.sortBy !== column) return '';
+    return filters.sortDir === 'desc' ? ' v' : ' ^';
+  };
+
+const formatDateTime = (value: string | Date) => {
+  const date = new Date(value);
+
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+
+  return `${dd}.${mm}.${yyyy}. ${hh}:${min}`;
 };
 
   return (
@@ -391,16 +419,142 @@ const handleFilterChange = (
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Start</TableCell>
-                    <TableCell>End</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell>User</TableCell>
-                    <TableCell>Hall</TableCell>
-                    <TableCell>Event</TableCell>
-                    <TableCell>Created</TableCell>
-                    {isAdmin && <TableCell>Actions</TableCell>}
+                                        <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'id',
+      sortDir:
+        prev.sortBy === 'id' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  ID{getSortIndicator('id')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'start',
+      sortDir:
+        prev.sortBy === 'start' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  Start{getSortIndicator('start')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'end',
+      sortDir:
+        prev.sortBy === 'end' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  End{getSortIndicator('end')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'status',
+      sortDir:
+        prev.sortBy === 'status' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  Status{getSortIndicator('status')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'description',
+      sortDir:
+        prev.sortBy === 'description' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  Description{getSortIndicator('description')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'user',
+      sortDir:
+        prev.sortBy === 'user' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  User{getSortIndicator('user')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'hall',
+      sortDir:
+        prev.sortBy === 'hall' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  Hall{getSortIndicator('hall')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'event',
+      sortDir:
+        prev.sortBy === 'event' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  Event{getSortIndicator('event')}
+</TableCell>
+                    <TableCell
+  onClick={() =>
+    setFilters(prev => ({
+      ...prev,
+      sortBy: 'created',
+      sortDir:
+        prev.sortBy === 'created' && prev.sortDir === 'asc'
+          ? 'desc'
+          : 'asc',
+    }))
+  }
+  sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+>
+  Created{getSortIndicator('created')}
+</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -415,8 +569,8 @@ const handleFilterChange = (
                       sx={{ cursor: isAdmin || reservation.userId === user?.id ? 'pointer' : 'default' }}
                     >
                       <TableCell>{reservation.id}</TableCell>
-                      <TableCell>{new Date(reservation.start).toLocaleString()}</TableCell>
-                      <TableCell>{new Date(reservation.end).toLocaleString()}</TableCell>
+                      <TableCell>{formatDateTime(reservation.start)}</TableCell>
+                      <TableCell>{formatDateTime(reservation.end)}</TableCell>
                       <TableCell>{reservation.status}</TableCell>
                       <TableCell>{reservation.description ?? ''}</TableCell>
                       <TableCell>
@@ -428,10 +582,58 @@ const handleFilterChange = (
                       </TableCell>
                       <TableCell>{hallById.get(reservation.hallId ?? 0)?.name ?? ''}</TableCell>
                       <TableCell>{eventById.get(reservation.eventId ?? 0)?.name ?? ''}</TableCell>
-                      <TableCell>{reservation.timestamp ? new Date(reservation.timestamp).toLocaleString() : ''}</TableCell>
-                      {isAdmin && (
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <TableCell>
+  {reservation.timestamp
+    ? formatDateTime(reservation.timestamp)
+    : ''}
+</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          {isAdmin ? (
+                            <>
+                              <Button
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditForm(reservation);
+                                }}
+                              >
+                                Edit
+                              </Button>
+
+                              <Button
+                                size="small"
+                                color="success"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApprove(reservation.id);
+                                }}
+                              >
+                                Approve
+                              </Button>
+
+                              <Button
+                                size="small"
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReject(reservation.id);
+                                }}
+                              >
+                                Reject
+                              </Button>
+
+                              <Button
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCancelReservation(reservation.id);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          ) : reservation.userId === user?.id ? (
                             <Button
                               size="small"
                               onClick={(e) => {
@@ -441,41 +643,19 @@ const handleFilterChange = (
                             >
                               Edit
                             </Button>
-
-                            <Button
-                              size="small"
-                              color="success"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleApprove(reservation.id);
-                              }}
-                            >
-                              Approve
-                            </Button>
-
-                            <Button
-                              size="small"
-                              color="error"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(reservation.id);
-                              }}
-                            >
-                              Reject
-                            </Button>
-
+                          ) : (
                             <Button
                               size="small"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleCancelReservation(reservation.id);
+                                openViewForm(reservation);
                               }}
                             >
-                              Cancel
+                              View
                             </Button>
-                          </Box>
-                        </TableCell>
-                      )}
+                          )}
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -513,19 +693,20 @@ const handleFilterChange = (
       {showForm && (
         <Dialog open={showForm} onClose={closeForm} maxWidth="sm" fullWidth>
           <DialogTitle sx={{ fontWeight: 'bold', fontSize: '1.3rem' }}>
-            {selectedReservation ? 'Edit Reservation' : 'New Reservation'}
+            {selectedReservation ? (readOnlyMode ? 'View Reservation' : 'Edit Reservation') : 'New Reservation'}
           </DialogTitle>
           <DialogContent sx={{ pt: 2 }}>
             <ReservationForm
               initial={selectedReservationFormValues}
               onCancel={closeForm}
               onSave={handleSave}
-              onDelete={selectedReservation ? handleDelete : undefined}
-              onAddEvent={openAddEventForm}
+              onDelete={selectedReservation && !readOnlyMode ? handleDelete : undefined}
+              onAddEvent={!readOnlyMode ? openAddEventForm : undefined}
               users={isAdmin ? users : user ? [user] : []}
               halls={halls}
               events={events}
               currentUserId={user?.id}
+              readOnly={readOnlyMode}
             />
           </DialogContent>
         </Dialog>

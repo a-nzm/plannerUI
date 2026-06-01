@@ -33,6 +33,8 @@ export interface ReservationFilters {
   userId?: number;
   hallId?: number;
   eventId?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }
 
 const buildQuery = (params: Record<string, unknown | undefined>) => {
@@ -58,6 +60,8 @@ export const getReservations = async (
     userId: filters.userId,
     hallId: filters.hallId,
     eventId: filters.eventId,
+    sortBy: filters.sortBy,
+    sortDir: filters.sortDir,
   });
 
   const response = await apiClient.get(`/reservations?${query}`);
