@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(response);
       storeUser(response);
     } catch {
+      clearCredentials();
       setUser(null);
       storeUser(null);
     } finally {
@@ -34,10 +35,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 useEffect(() => {
   const hasStoredAuth = Boolean(localStorage.getItem('auth_basic'));
 
-  if (!user && hasStoredAuth) {
+  if (hasStoredAuth) {
     loadCurrentUser();
   }
-}, [loadCurrentUser, user]);
+}, [loadCurrentUser]);
 
   const login = useCallback(async (email: string, password: string) => {
   setLoading(true);
@@ -84,9 +85,9 @@ useEffect(() => {
       register,
       logout,
       isAdmin: Boolean(
-        user?.admin || 
-        user?.role?.toUpperCase() === 'ADMIN' || 
-        user?.roles?.some(r => r.toUpperCase() === 'ADMIN')
+        user?.admin ||
+        ((user as any)?.role ?? '').toString().toUpperCase() === 'ADMIN' ||
+        ((user as any)?.roles ?? []).some((r: string) => r.toUpperCase() === 'ADMIN')
       ),
     }),
     [user, loading, login, logout, register]

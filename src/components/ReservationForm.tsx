@@ -8,6 +8,7 @@ import {
   InputLabel,
   Button,
   Stack,
+  Alert,
 } from '@mui/material';
 import { Delete as DeleteIcon, Save as SaveIcon, Close as CloseIcon } from '@mui/icons-material';
 import type { ReservationDto } from '../services/reservationApi';
@@ -80,6 +81,13 @@ export default function ReservationForm({
   }, [currentUserId, users.length, halls.length, events.length]);
 
   const isEdit = useMemo(() => typeof values.id === 'number', [values.id]);
+
+  const selectedHall = useMemo(() => halls.find((h) => h.id === values.hallId), [halls, values.hallId]);
+  const selectedEvent = useMemo(() => events.find((e) => e.id === values.eventId), [events, values.eventId]);
+
+  const capacityMismatch = Boolean(
+    selectedEvent && selectedHall && selectedEvent.capacity > selectedHall.capacity
+  );
 
   const updateField = (key: keyof ReservationFormValues, value: string) => {
     setValues((prev) => ({
@@ -157,24 +165,34 @@ export default function ReservationForm({
           variant="outlined"
         />
 
-        <FormControl fullWidth>
-          <InputLabel>Hall</InputLabel>
-          <Select
-            value={values.hallId ?? ''}
-            label="Hall"
-            onChange={(e) => updateField('hallId', String(e.target.value))}
-            disabled={readOnly}
-          >
-            {halls.map((hall) => (
-              <MenuItem key={hall.id} value={hall.id}>
-                {hall.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+          <FormControl sx={{ flex: 1 }}>
+            <InputLabel>Hall</InputLabel>
+            <Select
+              value={values.hallId ?? ''}
+              label="Hall"
+              onChange={(e) => updateField('hallId', String(e.target.value))}
+              disabled={readOnly}
+            >
+              {halls.map((hall) => (
+                <MenuItem key={hall.id} value={hall.id}>
+                  {hall.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            label="Hall cap"
+            value={halls.find((h) => h.id === values.hallId)?.capacity ?? ''}
+            size="small"
+            disabled
+            sx={{ width: 120 }}
+          />
+        </Box>
 
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-          <FormControl fullWidth>
+          <FormControl sx={{ flex: 1 }}>
             <InputLabel>Event</InputLabel>
             <Select
               value={values.eventId ?? ''}
@@ -189,6 +207,15 @@ export default function ReservationForm({
               ))}
             </Select>
           </FormControl>
+
+          <TextField
+            label="Event cap"
+            value={events.find((ev) => ev.id === values.eventId)?.capacity ?? ''}
+            size="small"
+            disabled
+            sx={{ width: 120 }}
+          />
+
           {!readOnly && onAddEvent ? (
             <Button
               type="button"
@@ -201,11 +228,16 @@ export default function ReservationForm({
           ) : null}
         </Box>
 
+        {capacityMismatch ? (
+          <Alert severity="warning">Selected event requires more capacity than the chosen hall.</Alert>
+        ) : null}
+
         <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
           {!readOnly ? (
             <Button
               type="submit"
               variant="contained"
+              disabled={capacityMismatch}
               color="primary"
               startIcon={<SaveIcon />}
             >

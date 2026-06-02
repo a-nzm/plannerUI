@@ -7,6 +7,8 @@ export interface UserDto {
   email: string;
   password?: string;
   admin?: boolean;
+  role?: string;
+  roles?: string[];
 }
 
 export interface LoginRequest {
@@ -73,13 +75,15 @@ export type UpdateMePayload = {
 };
 
 export const updateMe = async (data: UpdateMePayload): Promise<UserDto> => {
-  const payload = {
-    name: data.name,
-    surname: data.surname,
-    email: data.email,
-    password: data.password,
-    admin: data.admin ?? false,
-  };
+  const payload: UpdateMePayload = {};
+
+  if (data.name !== undefined) payload.name = data.name;
+  if (data.surname !== undefined) payload.surname = data.surname;
+  if (data.email !== undefined) payload.email = data.email;
+  if (data.password !== undefined) payload.password = data.password;
+  if (data.admin !== undefined) {
+    payload.admin = data.admin;
+  }
 
   const response = await apiClient.put('/users/me', payload);
   return response.data as UserDto;

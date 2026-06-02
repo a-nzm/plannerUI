@@ -123,6 +123,10 @@ function MePage() {
 
   const handleChangePassword = async () => {
     clearMessages();
+    if (!user) {
+    setError('Not authenticated');
+    return;
+  }
 
     if (!passwordData.newPassword) {
       setError('Please enter a new password');
