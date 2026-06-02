@@ -2,18 +2,18 @@ import apiClient from './api';
 
 export interface UserDto {
   id: number;
+  name: string;
+  surname: string;
   email: string;
-  name?: string;
-  surname?: string;
+  password?: string;
   admin?: boolean;
-  role?: string;
-  roles?: string[];
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
 }
+
 
 export interface RegisterRequest {
   email: string;
@@ -61,6 +61,27 @@ export const createUser = async (data: Omit<UserDto, 'id'>) => {
 
 export const updateUser = async (id: number, data: Partial<UserDto>) => {
   const response = await apiClient.put(`/users/${id}`, data);
+  return response.data as UserDto;
+};
+
+export type UpdateMePayload = {
+  name?: string;
+  surname?: string;
+  email?: string;
+  password?: string;
+  admin?: boolean;
+};
+
+export const updateMe = async (data: UpdateMePayload): Promise<UserDto> => {
+  const payload = {
+    name: data.name,
+    surname: data.surname,
+    email: data.email,
+    password: data.password,
+    admin: data.admin ?? false,
+  };
+
+  const response = await apiClient.put('/users/me', payload);
   return response.data as UserDto;
 };
 
