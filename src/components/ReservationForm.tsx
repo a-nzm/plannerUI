@@ -218,7 +218,7 @@ export default function ReservationForm({
             onClick={onCancel}
             startIcon={<CloseIcon />}
           >
-            {readOnly ? 'Close' : 'Cancel'}
+            {readOnly ? 'Close' : 'Exit'}
           </Button>
           {!readOnly && isEdit && onDelete ? (
             <Button

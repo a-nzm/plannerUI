@@ -192,6 +192,10 @@ function ReservationsPage() {
     setShowForm(true);
   };
 
+  const canEditReservation = (reservation: ReservationDto) =>
+    isAdmin ||
+    (reservation.userId === user?.id && reservation.status === ReservationStatus.PENDING);
+
   const openEditForm = (reservation: ReservationDto) => {
     setSelectedReservation(reservation);
     setReadOnlyMode(false);
@@ -562,11 +566,13 @@ const formatDateTime = (value: string | Date) => {
                     <TableRow
                       key={reservation.id}
                       onDoubleClick={() => {
-                        if (isAdmin || reservation.userId === user?.id) {
+                        if (canEditReservation(reservation)) {
                           openEditForm(reservation);
+                        } else {
+                          openViewForm(reservation);
                         }
                       }}
-                      sx={{ cursor: isAdmin || reservation.userId === user?.id ? 'pointer' : 'default' }}
+                      sx={{ cursor: 'pointer' }}
                     >
                       <TableCell>{reservation.id}</TableCell>
                       <TableCell>{formatDateTime(reservation.start)}</TableCell>
@@ -633,9 +639,10 @@ const formatDateTime = (value: string | Date) => {
                                 Cancel
                               </Button>
                             </>
-                          ) : reservation.userId === user?.id ? (
+                          ) : canEditReservation(reservation) ? (
                             <Button
                               size="small"
+                              color="warning"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 openEditForm(reservation);

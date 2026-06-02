@@ -253,6 +253,7 @@ const reservationInfoDialog = selectedReservation ? (
   </Dialog>
 ) : null;
 
+
   if (loading) {
     return <Typography>Loading calendar...</Typography>;
   }
