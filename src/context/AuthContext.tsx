@@ -60,7 +60,7 @@ useEffect(() => {
   const register = useCallback(async (email: string, password: string, name?: string, surname?: string) => {
     setLoading(true);
     try {
-      const response = await registerUser({ email, password, name, surname });
+      const response = await registerUser({ email, password, name, surname, admin: false });
       setCredentials(email, password);
       setUser(response);
       storeUser(response);

@@ -22,6 +22,7 @@ export interface RegisterRequest {
   password: string;
   name?: string;
   surname?: string;
+  admin?: boolean;
 }
 export interface Page<T> {
   content: T[];
