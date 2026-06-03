@@ -27,7 +27,6 @@ import {
   ReservationStatus,
   updateReservation,
   updateReservationStatus,
-  cancelReservation,
   type Page,
   type ReservationDto,
   type ReservationFilters,
@@ -196,6 +195,10 @@ function ReservationsPage() {
     isAdmin ||
     (reservation.userId === user?.id && reservation.status === ReservationStatus.PENDING);
 
+  const canCancelOwnReservation = (reservation: ReservationDto) =>
+    reservation.userId === user?.id &&
+    (reservation.status === ReservationStatus.PENDING || reservation.status === ReservationStatus.APPROVED);
+
   const openEditForm = (reservation: ReservationDto) => {
     setSelectedReservation(reservation);
     setReadOnlyMode(false);
@@ -277,7 +280,7 @@ function ReservationsPage() {
 
   const handleCancelReservation = async (reservationId: number) => {
     try {
-      await cancelReservation(reservationId);
+      await updateReservationStatus(reservationId, ReservationStatus.CANCELLED);
       await load();
     } catch (err: unknown) {
       console.error(err);
@@ -599,6 +602,8 @@ const formatDateTime = (value: string | Date) => {
                             <>
                               <Button
                                 size="small"
+                                color="warning"
+
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openEditForm(reservation);
@@ -639,27 +644,44 @@ const formatDateTime = (value: string | Date) => {
                                 Cancel
                               </Button>
                             </>
-                          ) : canEditReservation(reservation) ? (
-                            <Button
-                              size="small"
-                              color="warning"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditForm(reservation);
-                              }}
-                            >
-                              Edit
-                            </Button>
                           ) : (
-                            <Button
-                              size="small"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openViewForm(reservation);
-                              }}
-                            >
-                              View
-                            </Button>
+                            <>
+                              {canCancelOwnReservation(reservation) && (
+                                <Button
+                                  size="small"
+                                  color="error"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelReservation(reservation.id);
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              )}
+
+                              {canEditReservation(reservation) ? (
+                                <Button
+                                  size="small"
+                                  color="warning"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditForm(reservation);
+                                  }}
+                                >
+                                  Edit
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openViewForm(reservation);
+                                  }}
+                                >
+                                  View
+                                </Button>
+                              )}
+                            </>
                           )}
                         </Box>
                       </TableCell>

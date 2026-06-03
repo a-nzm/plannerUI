@@ -76,18 +76,30 @@ export default function ReservationForm({
       hallId: prev.hallId || halls[0]?.id || 0,
       eventId: prev.eventId || events[0]?.id || 0,
     }));
-    // Intentionally only update when the lists or currentUserId change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [currentUserId, users.length, halls.length, events.length]);
 
   const isEdit = useMemo(() => typeof values.id === 'number', [values.id]);
-
   const selectedHall = useMemo(() => halls.find((h) => h.id === values.hallId), [halls, values.hallId]);
   const selectedEvent = useMemo(() => events.find((e) => e.id === values.eventId), [events, values.eventId]);
 
   const capacityMismatch = Boolean(
     selectedEvent && selectedHall && selectedEvent.capacity > selectedHall.capacity
   );
+
+  // Local date/time pieces so we can use separate date and time inputs (more reliable than datetime-local)
+  const [startDate, setStartDate] = useState<string>(() => (values.start ? values.start.split('T')[0] : ''));
+  const [startTime, setStartTime] = useState<string>(() => (values.start ? values.start.split('T')[1]?.slice(0,5) ?? '' : ''));
+  const [endDate, setEndDate] = useState<string>(() => (values.end ? values.end.split('T')[0] : ''));
+  const [endTime, setEndTime] = useState<string>(() => (values.end ? values.end.split('T')[1]?.slice(0,5) ?? '' : ''));
+
+  useEffect(() => {
+    // keep local pieces in sync when values change externally
+    setStartDate(values.start ? values.start.split('T')[0] : '');
+    setStartTime(values.start ? values.start.split('T')[1]?.slice(0,5) ?? '' : '');
+    setEndDate(values.end ? values.end.split('T')[0] : '');
+    setEndTime(values.end ? values.end.split('T')[1]?.slice(0,5) ?? '' : '');
+  }, [values.start, values.end]);
 
   const updateField = (key: keyof ReservationFormValues, value: string) => {
     setValues((prev) => ({
@@ -108,29 +120,79 @@ export default function ReservationForm({
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 2 }}>
       <Stack spacing={2}>
-        <TextField
-          label="Start Date & Time"
-          type="datetime-local"
-          value={values.start}
-          onChange={(e) => updateField('start', e.target.value)}
-          required
-          fullWidth
-          InputLabelProps={{ shrink: true }}
-          variant="outlined"
-          disabled={readOnly}
-        />
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <TextField
+            label="Start Date"
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              const d = e.target.value;
+              setStartDate(d);
+              const composed = d && startTime ? `${d}T${startTime}` : '';
+              updateField('start', composed);
+            }}
+            required
+            InputLabelProps={{ shrink: true }}
+            variant="outlined"
+            disabled={readOnly}
+            sx={{ flex: 1 }}
+          />
 
-        <TextField
-          label="End Date & Time"
-          type="datetime-local"
-          value={values.end}
-          onChange={(e) => updateField('end', e.target.value)}
-          required
-          fullWidth
-          InputLabelProps={{ shrink: true }}
-          variant="outlined"
-          disabled={readOnly}
-        />
+          <TextField
+            label="Start Time"
+            type="time"
+            value={startTime}
+            onChange={(e) => {
+              const t = e.target.value;
+              setStartTime(t);
+              const composed = startDate && t ? `${startDate}T${t}` : '';
+              updateField('start', composed);
+            }}
+            required
+            InputLabelProps={{ shrink: true }}
+            variant="outlined"
+            disabled={readOnly}
+            inputProps={{ min: '08:00', max: '20:00', step: 300 }}
+            sx={{ width: 140 }}
+          />
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <TextField
+            label="End Date"
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              const d = e.target.value;
+              setEndDate(d);
+              const composed = d && endTime ? `${d}T${endTime}` : '';
+              updateField('end', composed);
+            }}
+            required
+            InputLabelProps={{ shrink: true }}
+            variant="outlined"
+            disabled={readOnly}
+            sx={{ flex: 1 }}
+          />
+
+          <TextField
+            label="End Time"
+            type="time"
+            value={endTime}
+            onChange={(e) => {
+              const t = e.target.value;
+              setEndTime(t);
+              const composed = endDate && t ? `${endDate}T${t}` : '';
+              updateField('end', composed);
+            }}
+            required
+            InputLabelProps={{ shrink: true }}
+            variant="outlined"
+            disabled={readOnly}
+            inputProps={{ min: '08:00', max: '20:00', step: 300 }}
+            sx={{ width: 140 }}
+          />
+        </Box>
 
         <TextField
           label="Status"

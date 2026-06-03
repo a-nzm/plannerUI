@@ -162,11 +162,9 @@ function EventsPage({ isAdmin = false }: { isAdmin?: boolean }) {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Events</Typography>
-        {isAdmin && (
-          <Button variant="contained" onClick={openNewForm}>
-            + New Event
-          </Button>
-        )}
+        <Button variant="contained" onClick={openNewForm}>
+          + New Event
+        </Button>
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
