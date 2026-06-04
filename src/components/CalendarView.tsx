@@ -57,7 +57,8 @@ function CalendarView() {
 
   const getWeekDates = (date: Date) => {
     const start = new Date(date);
-    start.setDate(date.getDate() - date.getDay());
+    // Calculate days to subtract to get to Monday (0 for Monday, 1 for Tuesday, etc.)
+    start.setDate(date.getDate() - (date.getDay() || 7) + 1);
     const dates = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
@@ -68,9 +69,9 @@ function CalendarView() {
   };
 
   const weekDates = getWeekDates(currentDate);
-  const hours = Array.from({ length: 13 }, (_, i) => 8 + i);
+  const hours = Array.from({ length: 12 }, (_, i) => 8 + i);
   const timelineStartHour = 8;
-  const timelineEndHour = 21;
+  const timelineEndHour = 20;
   const hourHeight = 48;
 
   const getReservationsForDate = (date: Date) => {
@@ -98,6 +99,34 @@ function CalendarView() {
       default:
         return { background: '#f7f7f7', border: '#ccc' };
     }
+  };
+
+  const getDisplayTimesForDay = (reservation: ReservationDto, date: Date) => {
+    const reservationStart = new Date(reservation.start);
+    const reservationEnd = new Date(reservation.end);
+    
+    const dayStart = new Date(date);
+    dayStart.setHours(0, 0, 0, 0);
+    
+    const dayEnd = new Date(date);
+    dayEnd.setHours(23, 59, 59, 999);
+    
+    let displayStart = new Date(reservationStart);
+    let displayEnd = new Date(reservationEnd);
+    
+    // If reservation started before this day, show from start of timeline
+    if (reservationStart < dayStart) {
+      displayStart = new Date(date);
+      displayStart.setHours(timelineStartHour, 0, 0, 0);
+    }
+    
+    // If reservation ends after this day, show to end of timeline
+    if (reservationEnd > dayEnd) {
+      displayEnd = new Date(date);
+      displayEnd.setHours(timelineEndHour, 0, 0, 0);
+    }
+    
+    return { displayStart, displayEnd };
   };
 
   const getTimeFraction = (date: Date) => date.getHours() + date.getMinutes() / 60;
@@ -146,6 +175,11 @@ function CalendarView() {
     const newDate = new Date(selectedDay || currentDate);
     newDate.setDate(newDate.getDate() + direction);
     setSelectedDay(newDate);
+  };
+
+  const openDayView = (date: Date) => {
+    setSelectedDay(date);
+    setViewMode('day');
   };
 
   const canEditSelectedReservation = Boolean(
@@ -338,6 +372,7 @@ const reservationInfoDialog = selectedReservation ? (
                     const event = events.find((e) => e.id === r.eventId);
                     const user = users.find((u) => u.id === r.userId);
                     const statusStyle = getStatusStyles(r.status);
+                    const { displayStart, displayEnd } = getDisplayTimesForDay(r, selectedDay);
                     const { left, width } = getReservationPosition(r, selectedDay);
 
                     return (
@@ -370,7 +405,7 @@ const reservationInfoDialog = selectedReservation ? (
                           </Box>
                           <Box>
                             <Typography variant="caption" display="block" sx={{ mb: 0.25, fontSize: '0.65rem' }}>
-                              {formatTime(r.start)} - {formatTime(r.end)}
+                              {formatTime(displayStart)} - {formatTime(displayEnd)}
                             </Typography>
                             <Chip
                               label={r.status}
@@ -434,7 +469,10 @@ const reservationInfoDialog = selectedReservation ? (
                 p: 1,
                 display: 'flex',
                 justifyContent: 'center',
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'action.hover' },
               }}
+              onClick={() => openDayView(date)}
             >
               <Typography variant="subtitle2" align="center">
 <>
@@ -481,9 +519,10 @@ const reservationInfoDialog = selectedReservation ? (
                       const event = events.find((e) => e.id === r.eventId);
                       const user = users.find((u) => u.id === r.userId);
                       const statusStyle = getStatusStyles(r.status);
+                      const { displayStart, displayEnd } = getDisplayTimesForDay(r, date);
                       const durationHours = Math.max(
                         0.5,
-                        (new Date(r.end).getTime() - new Date(r.start).getTime()) / 36e5
+                        (displayEnd.getTime() - displayStart.getTime()) / 36e5
                       );
                       const cardHeight = Math.min(140, 40 + durationHours * 16);
                       
@@ -519,7 +558,7 @@ const reservationInfoDialog = selectedReservation ? (
                               {event?.name}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" display="block">
-                              {formatTime(r.start)} - {formatTime(r.end)}
+                              {formatTime(displayStart)} - {formatTime(displayEnd)}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" display="block">
                               {user?.name}

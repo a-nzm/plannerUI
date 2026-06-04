@@ -85,9 +85,7 @@ useEffect(() => {
       register,
       logout,
       isAdmin: Boolean(
-        user?.admin ||
-        ((user as any)?.role ?? '').toString().toUpperCase() === 'ADMIN' ||
-        ((user as any)?.roles ?? []).some((r: string) => r.toUpperCase() === 'ADMIN')
+        user?.admin
       ),
     }),
     [user, loading, login, logout, register]

@@ -39,6 +39,52 @@ import ReservationForm, { type ReservationFormValues } from '../components/Reser
 import EventForm, { type EventFormValues } from '../components/EventForm';
 import { useAuth } from '../context/AuthContext';
 
+const getErrorMessage = (err: unknown, defaultMessage: string): string => {
+  console.error('Error object:', err);
+  
+  if (err && typeof err === 'object') {
+    const error = err as Record<string, unknown>;
+    
+    // Check for axios error response
+    if (error.response && typeof error.response === 'object') {
+      const response = error.response as Record<string, unknown>;
+      console.error('Response data:', response.data);
+      
+      if (response.data && typeof response.data === 'object') {
+        const data = response.data as Record<string, unknown>;
+        
+        // Try different possible fields
+        if (data.message && typeof data.message === 'string') {
+          return data.message;
+        }
+        if (data.error && typeof data.error === 'string') {
+          return data.error;
+        }
+        if (data.detail && typeof data.detail === 'string') {
+          return data.detail;
+        }
+        if (data.title && typeof data.title === 'string') {
+          return data.title;
+        }
+      } else if (typeof response.data === 'string' && response.data) {
+        return response.data;
+      }
+      
+      // Fallback to status text
+      if (response.statusText && typeof response.statusText === 'string') {
+        return response.statusText;
+      }
+    }
+    
+    // Check for error message property
+    if (error.message && typeof error.message === 'string') {
+      return error.message;
+    }
+  }
+  
+  return defaultMessage;
+};
+
 function ReservationsPage() {
   const [data, setData] = useState<Page<ReservationDto> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +111,7 @@ function ReservationsPage() {
       const result = await getReservations(page, pageSize, filters);
       setData(result);
     } catch (err: unknown) {
-      setError('Failed to load reservations');
+      setError(getErrorMessage(err, 'Failed to load reservations'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -148,7 +194,7 @@ function ReservationsPage() {
       closeEventForm();
     } catch (err: unknown) {
       console.error(err);
-      setError('Failed to save event');
+      setError(getErrorMessage(err, 'Failed to save event'));
     }
   };
 
@@ -240,7 +286,7 @@ function ReservationsPage() {
       await load();
     } catch (err: unknown) {
       console.error(err);
-      setError('Failed to save reservation');
+      setError(getErrorMessage(err, 'Failed to save reservation'));
     }
   };
 
@@ -254,7 +300,7 @@ function ReservationsPage() {
       await load();
     } catch (err: unknown) {
       console.error(err);
-      setError('Failed to delete reservation');
+      setError(getErrorMessage(err, 'Failed to delete reservation'));
     }
   };
 
@@ -264,7 +310,7 @@ function ReservationsPage() {
       await load();
     } catch (err: unknown) {
       console.error(err);
-      setError('Failed to approve reservation');
+      setError(getErrorMessage(err, 'Failed to approve reservation'));
     }
   };
 
@@ -274,7 +320,7 @@ function ReservationsPage() {
       await load();
     } catch (err: unknown) {
       console.error(err);
-      setError('Failed to reject reservation');
+      setError(getErrorMessage(err, 'Failed to reject reservation'));
     }
   };
 
@@ -284,7 +330,7 @@ function ReservationsPage() {
       await load();
     } catch (err: unknown) {
       console.error(err);
-      setError('Failed to cancel reservation');
+      setError(getErrorMessage(err, 'Failed to cancel reservation'));
     }
   };
 
